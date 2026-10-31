@@ -13,6 +13,17 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    version: "v2.33.0",
+    date: "October 31, 2026",
+    title: "Dental lab cases: stump shade and layered shades",
+    kind: "improvement",
+    items: [
+      { kind: "feature", text: "Record the stump (ND1–ND9) shade and cervical, body and incisal shades on each case." },
+      { kind: "improvement", text: "Bench cards now show the case's layered shades plus the Shade Library stain and firing notes." },
+      { kind: "fix", text: "Fixed a page warning on the lab calendar's rush cases." },
+    ],
+  },
+  {
     version: "v2.32.0",
     date: "October 31, 2026",
     title: "Dental lab stock: disc, resin and implant specs",
