@@ -32,7 +32,7 @@ import { useBarcodeScanner, scanBeep } from "@/hooks/useBarcodeScanner";
 import { matchScannedCase, teethLabel, type ToothRole } from "@/lib/labScanner";
 import { useWorkTypeCatalog, useShadeLibrary } from "@/hooks/useLabCatalog";
 import { ShadeMapFields } from "@/components/dlab/ShadeMapFields";
-import { shadeRecipe } from "@/lib/labCatalog";
+import { shadeRecipe, type ShadeMap } from "@/lib/labCatalog";
 import { suggestedFee } from "@/lib/labCatalog";
 import { addWorkingDaysYmd } from "@/lib/labCalendar";
 import { useLabWorkCalendar } from "@/hooks/useLabWorkCalendar";
@@ -292,7 +292,7 @@ function EditCase({ c, technicians, onDone }: { c: LabCaseRow; technicians: { id
     work_type: c.work_type || WORK_TYPES[0], shade: c.shade || "", material: c.material || "", due_date: c.due_date || "",
     fee: String(c.lab_fee ?? ""), discount: String(c.discount ?? ""), instructions: ((c as any).teeth?.length ? c.instructions : legacy.rest) || "", rush: isRush(c), technician_id: c.technician_id || "none",
   });
-  const [shadeMap, setShadeMap] = useState<Record<string, string>>(((c as any).shade_map as Record<string, string>) || {});
+  const [shadeMap, setShadeMap] = useState<ShadeMap>(((c as any).shade_map as ShadeMap) || {});
   const set = (k: string, val: any) => setV((p) => ({ ...p, [k]: val }));
   const catalog = useWorkTypeCatalog();
   const shades = useShadeLibrary();
