@@ -31,6 +31,8 @@ import { useLabClientNames, canonicalClient, useClientPriceLookup } from "./dlab
 import { useBarcodeScanner, scanBeep } from "@/hooks/useBarcodeScanner";
 import { matchScannedCase, teethLabel, type ToothRole } from "@/lib/labScanner";
 import { useWorkTypeCatalog, useShadeLibrary } from "@/hooks/useLabCatalog";
+import { ShadeMapFields } from "@/components/dlab/ShadeMapFields";
+import { shadeRecipe, type ShadeMap } from "@/lib/labCatalog";
 import { suggestedFee } from "@/lib/labCatalog";
 import { addWorkingDaysYmd } from "@/lib/labCalendar";
 import { useLabWorkCalendar } from "@/hooks/useLabWorkCalendar";
@@ -231,7 +233,7 @@ export default function DlabCasesPage() {
                   <Info label="Patient" value={patientOf(open)} />
                   <Info label="Due" value={open.due_date ? format(new Date(open.due_date), "d MMM yyyy") : "—"} />
                   <Info label="Teeth" value={teethLabel(teethOf(open), (open as any).tooth_roles || {}).join(", ") || "—"} />
-                  <Info label="Shade" value={open.shade || "—"} />
+                  <Info label="Shade" value={[open.shade, shadeRecipe((open as any).shade_map).line].filter(Boolean).join(" · ") || "—"} />
                   <Info label="Material" value={open.material || "—"} />
                   <Info label="Fee" value={money(open.lab_fee)} />
                   <Info label="Stage" value={isHeld(open) ? "On hold" : stageLabel(open.status)} />
@@ -290,6 +292,7 @@ function EditCase({ c, technicians, onDone }: { c: LabCaseRow; technicians: { id
     work_type: c.work_type || WORK_TYPES[0], shade: c.shade || "", material: c.material || "", due_date: c.due_date || "",
     fee: String(c.lab_fee ?? ""), discount: String(c.discount ?? ""), instructions: ((c as any).teeth?.length ? c.instructions : legacy.rest) || "", rush: isRush(c), technician_id: c.technician_id || "none",
   });
+  const [shadeMap, setShadeMap] = useState<ShadeMap>(((c as any).shade_map as ShadeMap) || {});
   const set = (k: string, val: any) => setV((p) => ({ ...p, [k]: val }));
   const catalog = useWorkTypeCatalog();
   const shades = useShadeLibrary();
@@ -300,7 +303,7 @@ function EditCase({ c, technicians, onDone }: { c: LabCaseRow; technicians: { id
     update.mutate({
       id: c.id, external_client_name: canonicalClient(v.client, names), clinic_doctor_name: v.doctor, external_patient_name: v.patient,
       work_type: v.work_type, shade: v.shade, material: v.material, due_date: v.due_date || null,
-      lab_fee: Number(v.fee || 0), discount: Number(v.discount || 0), instructions: v.instructions, teeth,
+      lab_fee: Number(v.fee || 0), discount: Number(v.discount || 0), instructions: v.instructions, teeth, shade_map: shadeMap,
       tooth_roles: Object.fromEntries(Object.entries(roles).filter(([t]) => teeth.includes(t))),
       urgency: v.rush ? "urgent" : "normal", is_urgent: v.rush, technician_id: t, assigned_technician_id: t,
     }, { onSuccess: onDone });
@@ -321,6 +324,7 @@ function EditCase({ c, technicians, onDone }: { c: LabCaseRow; technicians: { id
       <div className="sm:col-span-2"><F label="Teeth"><TeethPicker value={teeth} onChange={setTeeth} roles={roles} onRolesChange={setRoles} /></F></div>
       <F label="Shade"><Input list="dlab-edit-shades" value={v.shade} onChange={(e) => set("shade", e.target.value)} />
         <datalist id="dlab-edit-shades">{shades.options.map((o) => <option key={o} value={o} />)}</datalist></F>
+      <ShadeMapFields value={shadeMap} onChange={setShadeMap} options={shades.options} />
       <F label="Material"><Input value={v.material} onChange={(e) => set("material", e.target.value)} /></F>
       <F label="Due date"><Input type="date" value={v.due_date} onChange={(e) => set("due_date", e.target.value)} /></F>
       <F label="Technician"><TechSelect value={v.technician_id} onChange={(x) => set("technician_id", x)} technicians={technicians} /></F>
@@ -354,7 +358,7 @@ function Info({ label, value }: { label: string; value: string }) {
 
 export function NewCaseDialog({ open, onOpenChange, defaultClient = "" }: { open: boolean; onOpenChange: (o: boolean) => void; defaultClient?: string }) {
   const create = useCreateDentalLabCase();
-  const blank = { client: defaultClient, doctor: "", patient: "", work_type: WORK_TYPES[0], teeth: [] as string[], tooth_roles: {} as Record<string, ToothRole>, shade: "", material: "", due_date: "", fee: "", instructions: "", rush: false, technician_id: "none" };
+  const blank = { client: defaultClient, doctor: "", patient: "", work_type: WORK_TYPES[0], teeth: [] as string[], tooth_roles: {} as Record<string, ToothRole>, shade: "", material: "", due_date: "", fee: "", instructions: "", rush: false, technician_id: "none", shade_map: {} as Record<string, string> };
   const technicians = useTechnicians();
   const [v, setV] = useState<Record<string, any>>(blank);
   const names = useLabClientNames();
@@ -408,6 +412,7 @@ export function NewCaseDialog({ open, onOpenChange, defaultClient = "" }: { open
           <div className="sm:col-span-2"><F label="Teeth"><TeethPicker value={v.teeth} onChange={(t) => set("teeth", t)} roles={v.tooth_roles} onRolesChange={(r) => set("tooth_roles", r)} /></F></div>
           <F label="Shade"><Input list="dlab-new-shades" placeholder="e.g. A2" value={v.shade} onChange={(e) => set("shade", e.target.value)} />
             <datalist id="dlab-new-shades">{shades.options.map((o) => <option key={o} value={o} />)}</datalist></F>
+          <ShadeMapFields value={v.shade_map} onChange={(m) => set("shade_map", m)} options={shades.options} />
           <F label="Material"><Input value={v.material} onChange={(e) => set("material", e.target.value)} /></F>
           <F label="Due date"><Input type="date" value={v.due_date} onChange={(e) => { setDueTouched(true); set("due_date", e.target.value); }} /></F>
           <F label="Fee (₦)">
