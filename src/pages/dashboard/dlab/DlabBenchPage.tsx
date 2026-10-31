@@ -20,6 +20,7 @@ import { formatDuration, matchScannedCase, teethLabel, timerElapsedMs, timerPaus
 import { toast } from "@/hooks/use-toast";
 import { PrintTravelerButton } from "@/components/dlab/PrintTravelerButton";
 import { useShadeLibrary } from "@/hooks/useLabCatalog";
+import { shadeRecipe } from "@/lib/labCatalog";
 
 const TIMER_KEY = "dlab-bench-timers";
 type Timers = Record<string, TimerState>;
@@ -138,9 +139,12 @@ export default function DlabBenchPage() {
                 </p>
                 {(() => {
                   const sh = shades.find(c.shade);
-                  const d = sh?.data || {};
-                  const recipe = [d.guide, d.stump && `Stump ${d.stump}`, d.cervical && `Cervical ${d.cervical}`, d.body && `Body ${d.body}`, d.incisal && `Incisal ${d.incisal}`, d.notes].filter(Boolean).join(" · ");
-                  return recipe ? <p className="rounded-md bg-muted/50 px-2 py-1 text-xs"><span className="font-medium">Shade recipe:</span> {recipe}</p> : null;
+                  const { line, firing } = shadeRecipe(c.shade_map, sh?.data);
+                  if (!line && !firing) return null;
+                  return <div className="space-y-0.5 rounded-md bg-muted/50 px-2 py-1 text-xs">
+                    {line && <p><span className="font-medium">Shade recipe:</span> {line}</p>}
+                    {firing && <p className="whitespace-pre-wrap"><span className="font-medium">Stain / firing:</span> {firing}</p>}
+                  </div>;
                 })()}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{stageLabel(c.status)}</span>

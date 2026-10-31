@@ -39,10 +39,10 @@ function CaseLine({ c }: { c: LabCaseRow }) {
   return (
     <div className="flex justify-between gap-2 py-2 text-sm">
       <div className="min-w-0">
-        <p className="truncate font-medium">
+        <div className="truncate font-medium">
           {c.case_number} · {c.work_type}
           {isRush(c) && <Badge variant="destructive" className="ml-1.5 px-1.5 py-0 text-[10px]">Rush</Badge>}
-        </p>
+        </div>
         <p className="truncate text-xs text-muted-foreground">
           {clientOf(c)} · {patientOf(c)}{t.length ? ` · #${t.join(", #")}` : ""}
         </p>
