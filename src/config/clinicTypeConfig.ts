@@ -295,10 +295,12 @@ const dentalLabNav: NavGroup[] = [
     { title: "Case Board", path: "dlab/cases", icon: ClipboardList },
     { title: "Calendar", path: "dlab/calendar", icon: CalendarDays },
     { title: "My Bench", path: "dlab/bench", icon: Wrench },
+    { title: "QC Station", path: "dlab/r/qc", icon: FileCheck },
   ] },
-  { label: "Catalogue", items: [
+  { label: "Catalogue & Store", items: [
     { title: "Work Types", path: "dlab/r/work-types", icon: Package },
     { title: "Shade Library", path: "dlab/r/shades", icon: Star },
+    { title: "Material Store", path: "dlab/r/materials", icon: FlaskConical },
   ] },
   { label: "Clients & Money", items: [
     { title: "Clients", path: "dlab/clients", icon: Users },

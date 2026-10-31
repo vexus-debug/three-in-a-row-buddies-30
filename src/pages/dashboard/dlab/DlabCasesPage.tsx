@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Search, ChevronRight, ChevronLeft, AlertTriangle, Zap, Pencil, Ban, User, PauseCircle, PlayCircle, RotateCcw } from "lucide-react";
+import { Plus, Search, ChevronRight, ChevronLeft, AlertTriangle, Zap, Pencil, Ban, User, PauseCircle, PlayCircle, RotateCcw, LayoutGrid, List, ArrowUpDown } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,67 @@ const teethOf = (c: LabCaseRow): string[] => {
 };
 const money = (n: number) => `₦${Number(n || 0).toLocaleString()}`;
 
+type SortKey = "case" | "due" | "client" | "doctor" | "work" | "stage" | "tech";
+const STAGE_ORDER = (c: LabCaseRow) => (c.status === "on_hold" ? -1 : LAB_STAGES.findIndex((s) => s.key === normalizeStage(c.status)));
+
+function CaseTable({ rows, sort, setSort, techName, isHeld, selected, toggleSel, onOpen, onMove }: {
+  rows: LabCaseRow[]; sort: { key: SortKey; dir: 1 | -1 }; setSort: (s: { key: SortKey; dir: 1 | -1 }) => void;
+  techName: (id?: string | null) => string | undefined; isHeld: (c: LabCaseRow) => boolean;
+  selected: string[]; toggleSel: (id: string) => void; onOpen: (id: string) => void; onMove: (c: LabCaseRow, to: string) => boolean;
+}) {
+  const val = (c: LabCaseRow, k: SortKey): string | number => ({
+    case: c.case_number || "", due: c.due_date || "9999", client: clientOf(c), doctor: c.clinic_doctor_name || "",
+    work: c.work_type || "", stage: STAGE_ORDER(c), tech: techName(c.technician_id) || "~",
+  })[k];
+  const sorted = [...rows].sort((a, b) => { const x = val(a, sort.key), y = val(b, sort.key); return (x < y ? -1 : x > y ? 1 : 0) * sort.dir; });
+  const H = ({ k, children }: { k: SortKey; children: React.ReactNode }) => (
+    <th className="px-2 py-2 text-left font-medium">
+      <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => setSort({ key: k, dir: sort.key === k ? (-sort.dir as 1 | -1) : 1 })}>
+        {children}<ArrowUpDown className={`h-3 w-3 ${sort.key === k ? "text-primary" : "opacity-40"}`} />
+      </button>
+    </th>
+  );
+  if (!sorted.length) return <p className="py-8 text-center text-sm text-muted-foreground">No cases match.</p>;
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <table className="w-full text-sm">
+        <thead className="bg-muted/50 text-xs text-muted-foreground">
+          <tr><th className="w-8 px-2" /><H k="case">Case</H><H k="due">Due</H><H k="client">Clinic</H><H k="doctor">Doctor</H><th className="px-2 py-2 text-left font-medium">Teeth</th><H k="work">Work</H><H k="stage">Stage</H><H k="tech">Technician</H></tr>
+        </thead>
+        <tbody className="divide-y">
+          {sorted.map((c) => {
+            const held = isHeld(c); const late = isOverdue(c);
+            return (
+              <tr key={c.id} className={`cursor-pointer hover:bg-muted/40 ${late ? "bg-destructive/5" : held ? "bg-warning/10" : ""}`} onClick={() => onOpen(c.id)}>
+                <td className="px-2" onClick={(e) => e.stopPropagation()}>{!held && normalizeStage(c.status) !== "delivered" && <Checkbox checked={selected.includes(c.id)} onCheckedChange={() => toggleSel(c.id)} aria-label={`Select ${c.case_number}`} />}</td>
+                <td className="whitespace-nowrap px-2 py-2 font-mono text-xs">
+                  {c.case_number}
+                  {isRush(c) && <Badge variant="destructive" className="ml-1 px-1 text-[10px]">Rush</Badge>}
+                  {late && <Badge variant="outline" className="ml-1 border-destructive px-1 text-[10px] text-destructive">Late</Badge>}
+                </td>
+                <td className="whitespace-nowrap px-2 py-2">{c.due_date ? format(new Date(c.due_date), "d MMM") : "—"}</td>
+                <td className="max-w-[160px] truncate px-2 py-2">{clientOf(c)}</td>
+                <td className="max-w-[140px] truncate px-2 py-2 text-muted-foreground">{c.clinic_doctor_name || "—"}</td>
+                <td className="whitespace-nowrap px-2 py-2 font-mono text-xs">{teethOf(c).length ? `#${teethOf(c).join(", #")}` : "—"}</td>
+                <td className="max-w-[160px] truncate px-2 py-2">{c.work_type}</td>
+                <td className="px-2 py-1" onClick={(e) => e.stopPropagation()}>
+                  {held ? <Badge variant="outline" className="border-warning" title={(c as any).hold_reason || ""}>On hold</Badge> : (
+                    <Select value={normalizeStage(c.status)} onValueChange={(v) => onMove(c, v)}>
+                      <SelectTrigger className="h-8 w-40 text-xs" aria-label={`Stage for ${c.case_number}`}><SelectValue /></SelectTrigger>
+                      <SelectContent>{LAB_STAGES.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-2 py-2 text-muted-foreground">{techName(c.technician_id) || "Unassigned"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function DlabCasesPage() {
   const { data: cases = [], isLoading } = useLabCases();
   const move = useMoveCase();
@@ -72,6 +133,8 @@ export default function DlabCasesPage() {
   const [remakeFor, setRemakeFor] = useState<LabCaseRow | null>(null);
   const isRemade = (c: LabCaseRow) => c.status === REMAKE_SPAWNED;
   const [selected, setSelected] = useState<string[]>([]);
+  const [view, setView] = useState<"board" | "table">("board");
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "due", dir: 1 });
   // Scanning a traveler barcode anywhere on the board opens that case.
   useBarcodeScanner((code) => {
     const c = matchScannedCase(cases, code);
@@ -129,6 +192,10 @@ export default function DlabCasesPage() {
         <Button onClick={() => setCreating(true)}><Plus className="mr-1 h-4 w-4" />New case</Button>
       </PageHeader>
       <div className="flex flex-wrap gap-2">
+        <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="View">
+          <Button size="sm" variant={view === "board" ? "secondary" : "ghost"} className="h-8" onClick={() => setView("board")}><LayoutGrid className="mr-1 h-3.5 w-3.5" />Board</Button>
+          <Button size="sm" variant={view === "table" ? "secondary" : "ghost"} className="h-8" onClick={() => setView("table")}><List className="mr-1 h-3.5 w-3.5" />Table</Button>
+        </div>
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input className="pl-9" placeholder="Search case, clinic, patient, lot no…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -149,7 +216,10 @@ export default function DlabCasesPage() {
           </div>
         )}
       </div>
-      {isLoading ? <p className="text-sm text-muted-foreground">Loading cases…</p> : (
+      {isLoading ? <p className="text-sm text-muted-foreground">Loading cases…</p> : view === "table" ? (
+        <CaseTable rows={visible.filter((c) => !isRemade(c))} sort={sort} setSort={setSort} techName={techName}
+          isHeld={isHeld} selected={selected} toggleSel={toggleSel} onOpen={(id) => setOpenId(id)} onMove={tryMove} />
+      ) : (
         <div className="flex gap-3 overflow-x-auto pb-3 snap-x">
           {lanes.map((stage) => {
             const held = stage.key === "on_hold";
