@@ -2255,6 +2255,7 @@ export type Database = {
           remake_count: number
           remark: string | null
           shade: string | null
+          shade_map: Json
           start_date: string | null
           status: string
           technician_id: string | null
@@ -2303,6 +2304,7 @@ export type Database = {
           remake_count?: number
           remark?: string | null
           shade?: string | null
+          shade_map?: Json
           start_date?: string | null
           status?: string
           technician_id?: string | null
@@ -2351,6 +2353,7 @@ export type Database = {
           remake_count?: number
           remark?: string | null
           shade?: string | null
+          shade_map?: Json
           start_date?: string | null
           status?: string
           technician_id?: string | null
