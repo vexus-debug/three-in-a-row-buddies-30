@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { Plus, AlertTriangle, Zap, Truck, Inbox } from "lucide-react";
+import { Plus, AlertTriangle, Zap, Truck, Inbox, PauseCircle } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +19,13 @@ export default function DlabOverviewPage() {
   const today = new Date().toISOString().slice(0, 10);
 
   const s = useMemo(() => {
-    const active = cases.filter((c) => normalizeStage(c.status) !== "delivered");
+    const active = cases.filter((c) => normalizeStage(c.status) !== "delivered" && c.status !== "cancelled");
     return {
       active,
       late: active.filter(isOverdue),
       rush: active.filter(isRush),
       dueToday: active.filter((c) => c.due_date === today),
+      held: active.filter((c) => c.status === "on_hold"),
       ready: active.filter((c) => normalizeStage(c.status) === "ready"),
       receivedToday: cases.filter((c) => c.created_at.slice(0, 10) === today),
     };
@@ -35,6 +36,7 @@ export default function DlabOverviewPage() {
     { label: "Due today", value: s.dueToday.length, icon: Truck },
     { label: "Late", value: s.late.length, icon: AlertTriangle, warn: s.late.length > 0 },
     { label: "Rush", value: s.rush.length, icon: Zap },
+    { label: "On hold", value: s.held.length, icon: PauseCircle, warn: s.held.length > 0 },
   ];
   const urgent = [...s.late, ...s.rush.filter((c) => !s.late.includes(c))].slice(0, 8);
 
@@ -44,7 +46,7 @@ export default function DlabOverviewPage() {
         <Button onClick={() => setCreating(true)}><Plus className="mr-1 h-4 w-4" />New case</Button>
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {kpis.map((k) => (
           <Card key={k.label}><CardContent className="flex items-center gap-3 p-4">
             <k.icon className={`h-5 w-5 ${k.warn ? "text-destructive" : "text-primary"}`} />
