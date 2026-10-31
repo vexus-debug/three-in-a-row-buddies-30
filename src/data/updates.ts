@@ -13,6 +13,17 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    version: "v2.34.0",
+    date: "October 31, 2026",
+    title: "Dental lab production: table view and easier navigation",
+    kind: "improvement",
+    items: [
+      { kind: "feature", text: "Case Board now has a Table view with sortable columns and a stage picker on every row." },
+      { kind: "improvement", text: "QC Station and Material Store now appear in the lab sidebar." },
+      { kind: "improvement", text: "Production Overview shows how many cases are on hold." },
+    ],
+  },
+  {
     version: "v2.33.0",
     date: "October 31, 2026",
     title: "Dental lab cases: stump shade and layered shades",
