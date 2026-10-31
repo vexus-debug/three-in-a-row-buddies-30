@@ -99,3 +99,14 @@ export function materialSpecs(r: { data?: Record<string, any> | null }): string 
   if (d.volume_ml) vals.push(`${d.volume_ml} ml`);
   return vals.join(" · ");
 }
+
+export interface ShadeMap { stump?: string; cervical?: string; body?: string; incisal?: string }
+
+/** Bench recipe line: case-specific stratification wins over the library entry; adds firing notes. */
+export function shadeRecipe(map: ShadeMap | null | undefined, lib?: Record<string, any> | null): { line: string; firing: string } {
+  const m = map || {}; const d = lib || {};
+  const pick = (k: keyof ShadeMap) => m[k] || d[k];
+  const line = [d.guide, pick("stump") && `Stump ${pick("stump")}`, pick("cervical") && `Cervical ${pick("cervical")}`,
+    pick("body") && `Body ${pick("body")}`, pick("incisal") && `Incisal ${pick("incisal")}`, d.notes].filter(Boolean).join(" · ");
+  return { line, firing: d.recipe || "" };
+}
